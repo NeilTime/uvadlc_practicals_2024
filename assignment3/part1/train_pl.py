@@ -98,12 +98,10 @@ class VAE(pl.LightningModule):
         #######################
         z = torch.randn(batch_size, self.hparams.z_dim, device=self.decoder.device)
         
-        # Decode the random latent vectors
         x_samples = self.decoder(z)
         
-        # Convert the continuous outputs to 4-bit images (values between 0 and 15)
-        x_samples = torch.softmax(x_samples, dim=1)  # Convert to probabilities
-        x_samples = torch.argmax(x_samples, dim=1, keepdim=True)  # Take most likely value
+        x_samples = torch.softmax(x_samples, dim=1)
+        x_samples = torch.argmax(x_samples, dim=1, keepdim=True)
         #######################
         # END OF YOUR CODE    #
         #######################
