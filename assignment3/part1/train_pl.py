@@ -70,10 +70,15 @@ class VAE(pl.LightningModule):
         #######################
         # PUT YOUR CODE HERE  #
         #######################
-        L_rec = None
-        L_reg = None
-        bpd = None
-        raise NotImplementedError
+        mean, log_std = self.encoder(imgs)
+        z = sample_reparameterize(mean, torch.exp(log_std))
+        recon = self.decoder(z)
+        L_rec = F.cross_entropy(recon.reshape(-1, recon.shape[1], recon.shape[2]*recon.shape[3]), 
+                           imgs.reshape(-1, imgs.shape[2]*imgs.shape[3]).long(),
+                           reduction='none').sum(dim=-1).mean()
+        L_reg = KLD(mean, log_std).mean()
+        elbo = L_rec + L_reg
+        bpd = elbo_to_bpd(elbo, imgs.shape)
         #######################
         # END OF YOUR CODE    #
         #######################
@@ -91,8 +96,14 @@ class VAE(pl.LightningModule):
         #######################
         # PUT YOUR CODE HERE  #
         #######################
-        x_samples = None
-        raise NotImplementedError
+        z = torch.randn(batch_size, self.hparams.z_dim, device=self.decoder.device)
+        
+        # Decode the random latent vectors
+        x_samples = self.decoder(z)
+        
+        # Convert the continuous outputs to 4-bit images (values between 0 and 15)
+        x_samples = torch.softmax(x_samples, dim=1)  # Convert to probabilities
+        x_samples = torch.argmax(x_samples, dim=1, keepdim=True)  # Take most likely value
         #######################
         # END OF YOUR CODE    #
         #######################
